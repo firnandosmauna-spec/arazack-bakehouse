@@ -54,7 +54,7 @@ async function startServer(preferredPort) {
     // .env not found, ignore
   }
 
-  let port = preferredPort || Number(process.env.PORT || 3000);
+  let port = preferredPort || Number(process.env.PORT || 3001);
   const app = createApp();
   await app.mcpClient.start();
 
@@ -426,6 +426,13 @@ if (require.main === module) {
       const shutdown = () => {
         app.shutdown().finally(() => process.exit(0));
       };
+
+      process.on("uncaughtException", (err) => {
+        console.error("UNCAUGHT EXCEPTION:", err);
+      });
+      process.on("unhandledRejection", (reason, promise) => {
+        console.error("UNHANDLED REJECTION:", reason);
+      });
 
       process.on("SIGINT", shutdown);
       process.on("SIGTERM", shutdown);
