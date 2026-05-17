@@ -1,0 +1,22 @@
+{
+  "name": "dapur-senja-pos",
+  "version": "1.0.0",
+  "description": "Aplikasi POS dan Company Profile Dapur Senja - Kuliner Rumahan Premium",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "laundry",
+    "company-profile",
+    "pos",
+    "multi-branch",
+    "mcp",
+    "node"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4"
+  }
+}
