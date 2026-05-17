@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS services (
     price NUMERIC NOT NULL,
     unit TEXT,
     turnaround_minutes INT,
-    description TEXT
+    description TEXT,
+    image TEXT
 );
 
 -- Bagian 3: Transaksi
