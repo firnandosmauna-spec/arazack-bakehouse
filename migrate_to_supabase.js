@@ -33,6 +33,13 @@ async function migrateData() {
     if (servicesData && servicesData.length > 0) {
       console.log(`Mengunggah ${servicesData.length} menu makanan...`);
       for (const item of servicesData) {
+        
+        // Sesuaikan nama kolom (camelCase ke snake_case)
+        if (item.turnaroundMinutes !== undefined) {
+          item.turnaround_minutes = item.turnaroundMinutes;
+          delete item.turnaroundMinutes;
+        }
+
         const { error: errMenu } = await supabase
           .from('services')
           .upsert(item, { onConflict: 'id' });

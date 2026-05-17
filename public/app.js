@@ -222,6 +222,15 @@ async function loadMenu() {
         const res = await fetch('/api/services');
         const data = await res.json();
         menuData = data.services;
+        
+        if (window.siteSettings && window.siteSettings.menuOrder) {
+            menuData.sort((a, b) => {
+                const iA = window.siteSettings.menuOrder.indexOf(a.id);
+                const iB = window.siteSettings.menuOrder.indexOf(b.id);
+                return (iA !== -1 ? iA : 999) - (iB !== -1 ? iB : 999);
+            });
+        }
+        
         renderMenu();
     } catch (err) {
         console.error('Failed to load menu:', err);

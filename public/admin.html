@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Dashboard | Dapur Senja</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css?v=21">
     <style>
@@ -320,15 +321,16 @@
 
             <div class="glass-card">
                 <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Menu</th>
-                            <th>Kategori</th>
-                            <th>Harga</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"></th>
+                                    <th>Nama Menu</th>
+                                    <th>Kategori</th>
+                                    <th>Harga</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
                     <tbody id="menuTableBody">
                         <!-- Data will be loaded here -->
                     </tbody>

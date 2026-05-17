@@ -27,10 +27,15 @@ export default async function handler(req, res) {
     return;
   }
 
-  // --- SETTINGS ---
   if (pathname === '/api/settings') {
     if (req.method === 'GET') {
-      const { data } = await supabase.from('app_settings').select('settings').eq('id', 1).single();
+      const { data, error } = await supabase.from('app_settings').select('settings').eq('id', 1).single();
+      if (error) {
+         return res.status(200).json({ 
+           _debug_error: error, 
+           _debug_url: process.env.EXPO_PUBLIC_SUPABASE_URL || 'fallback_used' 
+         });
+      }
       return res.status(200).json(data ? data.settings : {});
     }
     if (req.method === 'POST') {

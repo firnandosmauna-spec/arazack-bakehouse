@@ -616,10 +616,21 @@ async function loadMenu() {
     const tbody = document.getElementById('menuTableBody');
     tbody.innerHTML = '';
 
+    if (currentSiteSettings && currentSiteSettings.menuOrder) {
+        services.sort((a, b) => {
+            const iA = currentSiteSettings.menuOrder.indexOf(a.id);
+            const iB = currentSiteSettings.menuOrder.indexOf(b.id);
+            return (iA !== -1 ? iA : 999) - (iB !== -1 ? iB : 999);
+        });
+    }
+
     services.forEach(item => {
         const tr = document.createElement('tr');
+        tr.dataset.id = item.id;
+        tr.style.cursor = 'grab';
         const badgeClass = item.category === 'Minuman' ? 'badge-drink' : 'badge-food';
         tr.innerHTML = `
+            <td style="width: 40px; text-align: center; color: #ccc;">☰</td>
             <td><strong>${item.name}</strong></td>
             <td><span class="badge-pills ${badgeClass}">${item.category}</span></td>
             <td>Rp${item.price.toLocaleString('id-ID')}</td>
@@ -631,6 +642,23 @@ async function loadMenu() {
         `;
         tbody.appendChild(tr);
     });
+
+    if (window.Sortable) {
+        Sortable.create(tbody, {
+            animation: 150,
+            handle: 'tr',
+            onEnd: async function () {
+                const newOrder = Array.from(tbody.children).map(tr => tr.dataset.id);
+                currentSiteSettings.menuOrder = newOrder;
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentSiteSettings)
+                });
+                document.getElementById('livePreview').contentWindow.location.reload();
+            }
+        });
+    }
 }
 
 async function loadOrders() {
