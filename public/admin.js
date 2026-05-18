@@ -477,8 +477,76 @@ function setupIframeEditor() {
         
         .admin-editable-img { position: relative; display: inline-block; transition: all 0.2s; }
         .admin-editable-img:hover { outline: 4px solid #00a8ff; outline-offset: -4px; cursor: pointer; filter: brightness(0.9); }
+        
+        /* Floating Card Actions for Live Editing */
+        .menu-card { position: relative; cursor: grab; transition: all 0.2s; }
+        .menu-card:hover { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .iframe-card-actions {
+            position: absolute;
+            top: 10px; right: 10px;
+            display: none; gap: 6px;
+            z-index: 1001;
+        }
+        .menu-card:hover .iframe-card-actions { display: flex; }
+        .iframe-card-actions button {
+            background: #2ecc71; color: white;
+            border: none; padding: 6px 12px;
+            border-radius: 8px; cursor: pointer;
+            font-size: 11px; font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+        }
+        .iframe-card-actions button:hover { transform: scale(1.05); }
+        .iframe-card-actions button.btn-delete { background: #e74c3c; }
     `;
     frameDoc.head.appendChild(style);
+
+    // Attach actions to product cards inside Live Preview
+    const menuCards = frameDoc.querySelectorAll('.menu-card');
+    menuCards.forEach(card => {
+        const id = card.dataset.id;
+        if (!id) return;
+        
+        const actions = frameDoc.createElement('div');
+        actions.className = 'iframe-card-actions';
+        actions.innerHTML = `
+            <button class="btn-copy" title="Duplikat Menu ini">📋 Duplikat</button>
+            <button class="btn-delete" title="Hapus Menu ini">🗑️ Hapus</button>
+        `;
+        
+        actions.querySelector('.btn-copy').addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.parent.duplicateMenu(id);
+        });
+        
+        actions.querySelector('.btn-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            window.parent.deleteMenu(id);
+        });
+        
+        card.appendChild(actions);
+    });
+
+    // Initialize Sortable on Landing Page menu-grid inside iframe
+    const grid = frameDoc.querySelector('.menu-grid');
+    if (grid && window.Sortable) {
+        window.Sortable.create(grid, {
+            animation: 150,
+            onEnd: async function () {
+                const newOrder = Array.from(grid.children).map(c => c.dataset.id).filter(Boolean);
+                currentSiteSettings.menuOrder = newOrder;
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(currentSiteSettings)
+                });
+                loadMenu();
+                document.getElementById('livePreview').contentWindow.location.reload();
+            }
+        });
+    }
 
     const editableTexts = [
         { id: 'siteName', inputId: 'setSiteName', panelId: 'panel-nav' },
@@ -700,6 +768,7 @@ window.editMenu = function(item) {
     document.getElementById('menuCategory').value = item.category;
     document.getElementById('menuPrice').value = item.price;
     document.getElementById('menuDesc').value = item.description || '';
+    document.getElementById('menuImage').value = item.image || '';
     menuModal.style.display = 'flex';
 }
 
@@ -715,8 +784,9 @@ menuForm.addEventListener('submit', async (e) => {
         category: document.getElementById('menuCategory').value,
         price: Number(document.getElementById('menuPrice').value),
         description: document.getElementById('menuDesc').value,
+        image: document.getElementById('menuImage').value,
         unit: document.getElementById('menuCategory').value === 'Minuman' ? 'gelas' : 'porsi',
-        turnaroundMinutes: 15
+        turnaround_minutes: 15
     };
 
     const res = await fetch('/api/services', {
@@ -728,6 +798,7 @@ menuForm.addEventListener('submit', async (e) => {
     if (res.ok) {
         closeModal();
         loadMenu();
+        document.getElementById('livePreview').contentWindow.location.reload();
     } else {
         const err = await res.json();
         alert(err.error || 'Gagal menyimpan menu');
@@ -740,8 +811,57 @@ window.deleteMenu = async function(id) {
     const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
     if (res.ok) {
         loadMenu();
+        document.getElementById('livePreview').contentWindow.location.reload();
     } else {
         const err = await res.json();
         alert(err.error || 'Gagal menghapus menu');
+    }
+}
+
+window.duplicateMenu = async function(id) {
+    if (!confirm('Apakah Anda yakin ingin menduplikasi menu ini?')) return;
+
+    try {
+        const res = await fetch('/api/services');
+        const { services } = await res.json();
+        const item = services.find(s => s.id === id);
+        if (!item) {
+            alert('Menu asal tidak ditemukan');
+            return;
+        }
+
+        const duplicate = {
+            ...item,
+            id: 'menu_' + Date.now(),
+            name: item.name + ' (Salinan)',
+            turnaround_minutes: item.turnaround_minutes || 0
+        };
+
+        const saveRes = await fetch('/api/services', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(duplicate)
+        });
+
+        if (saveRes.ok) {
+            if (currentSiteSettings.menuOrder) {
+                const index = currentSiteSettings.menuOrder.indexOf(id);
+                if (index !== -1) {
+                    currentSiteSettings.menuOrder.splice(index + 1, 0, duplicate.id);
+                    await fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(currentSiteSettings)
+                    });
+                }
+            }
+            loadMenu();
+            document.getElementById('livePreview').contentWindow.location.reload();
+        } else {
+            alert('Gagal menduplikasi menu');
+        }
+    } catch (err) {
+        console.error('Duplicate error:', err);
+        alert('Terjadi kesalahan saat menduplikasi menu');
     }
 }
